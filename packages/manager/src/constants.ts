@@ -207,6 +207,12 @@ export const HIGH_AVAILABILITY_PRICE =
     ? undefined
     : Number(import.meta.env.REACT_APP_LKE_HIGH_AVAILABILITY_PRICE);
 
+// Price of LKE's IP ACL offering in USD
+export const IP_ACCESS_CONTROL_LIST_PRICE =
+  import.meta.env.REACT_APP_LKE_IP_ACCESS_CONTROL_LIST_PRICE === undefined
+    ? undefined
+    : Number(import.meta.env.REACT_APP_LKE_IP_ACCESS_CONTROL_LIST_PRICE);
+
 export const DB_ROOT_USERNAME = 'linroot';
 
 // "In an effort to fight spam, Linode restricts outbound connections on ports 25, 465, and 587 on all Linodes for new accounts created after November 5th, 2019."

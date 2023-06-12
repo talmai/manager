@@ -36,7 +36,10 @@ export const kubernetesClusterFactory = Factory.Sync.makeFactory<KubernetesClust
     label: Factory.each((i) => `cluster-${i}`),
     k8s_version: '1.21',
     tags: [],
-    control_plane: { high_availability: true },
+    control_plane: {
+      high_availability: true,
+      ts_allow_list: new Map<string, string[]>(),
+    },
   }
 );
 
@@ -56,7 +59,10 @@ export const kubernetesAPIResponse = Factory.Sync.makeFactory<KubernetesCluster>
     label: Factory.each((i) => `test-cluster-${i}`),
     k8s_version: '1.21',
     tags: [],
-    control_plane: { high_availability: true },
+    control_plane: {
+      high_availability: true,
+      ts_allow_list: new Map<string, string[]>(),
+    },
   }
 );
 

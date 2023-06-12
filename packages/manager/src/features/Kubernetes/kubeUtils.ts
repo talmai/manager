@@ -6,7 +6,10 @@ import {
 } from '@linode/api-v4/lib/kubernetes';
 import { ExtendedType } from 'src/utilities/extendType';
 import { Region } from '@linode/api-v4/lib/regions';
-import { HIGH_AVAILABILITY_PRICE } from 'src/constants';
+import {
+  HIGH_AVAILABILITY_PRICE,
+  IP_ACCESS_CONTROL_LIST_PRICE,
+} from 'src/constants';
 
 export const nodeWarning = `We recommend a minimum of 3 nodes in each Node Pool to avoid downtime during upgrades and maintenance.`;
 export const nodesDeletionWarning = `All nodes will be deleted and new nodes will be created to replace them.`;
@@ -27,13 +30,17 @@ export const getMonthlyPrice = (
 export const getTotalClusterPrice = (
   pools: KubeNodePoolResponse[],
   types: ExtendedType[],
-  highAvailability: boolean = false
+  highAvailability: boolean = false,
+  ipAccessControlList: boolean = false
 ) => {
   const price = pools.reduce((accumulator, node) => {
     return accumulator + getMonthlyPrice(node.type, node.count, types);
   }, 0);
 
-  return highAvailability ? price + (HIGH_AVAILABILITY_PRICE || 0) : price;
+  const costHA = highAvailability ? HIGH_AVAILABILITY_PRICE || 0 : 0;
+  const costIPACL = ipAccessControlList ? IP_ACCESS_CONTROL_LIST_PRICE || 0 : 0;
+
+  return price + costHA + costIPACL;
 };
 
 interface ClusterData {
@@ -80,6 +87,11 @@ export const getDescriptionForCluster = (
 
   if (cluster.control_plane.high_availability) {
     description.push(`High Availability`);
+  }
+
+  const allow_list_size = cluster.control_plane.ts_allow_list?.size ?? 0;
+  if (allow_list_size > 0) {
+    description.push(`IP Access Control List`);
   }
 
   return description.join(', ');
@@ -133,5 +145,24 @@ export const getKubeHighAvailability = (
   return {
     showHighAvailability,
     isClusterHighlyAvailable,
+  };
+};
+
+export const getKubeIPAccessControlList = (
+  account: Account | undefined,
+  cluster?: KubernetesCluster | null
+) => {
+  const showIPAccessControlList = account?.capabilities.includes(
+    'LKE IP Access Control List'
+  );
+
+  const allow_list_size = cluster?.control_plane.ts_allow_list?.size ?? 0;
+  const isIPAccessControlList = Boolean(
+    showIPAccessControlList && allow_list_size > 0
+  );
+
+  return {
+    showIPAccessControlList,
+    isIPAccessControlList,
   };
 };

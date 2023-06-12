@@ -54,11 +54,17 @@ export const UpgradeKubernetesClusterToHADialog = (props: Props) => {
     setSubmitting(true);
     setError(undefined);
     updateKubernetesCluster({
-      control_plane: { high_availability: true },
+      control_plane: {
+        high_availability: true,
+        ts_allow_list: new Map<string, any>(),
+      },
     })
       .then(() => {
         setSubmitting(false);
         enqueueSnackbar('Enabled HA Control Plane', { variant: 'success' });
+        enqueueSnackbar('Enabled IP Access Control List', {
+          variant: 'success',
+        });
         onClose();
       })
       .catch((e) => {

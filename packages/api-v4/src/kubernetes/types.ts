@@ -58,6 +58,8 @@ export interface KubernetesDashboardResponse {
 
 export interface ControlPlaneOptions {
   high_availability: boolean;
+  ts_allow_list?: Map<string, string[]>; // ES6 collections objects don't serialize to JSON
+  allow_list?: string; // within our app, we use ts_allow_list, but for all XHR calls we JSON.stringify into this
 }
 
 export interface CreateKubeClusterPayload {

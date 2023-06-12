@@ -34,7 +34,10 @@ import { filterCurrentTypes } from 'src/utilities/filterCurrentLinodeTypes';
 import scrollErrorIntoView from 'src/utilities/scrollErrorIntoView';
 import KubeCheckoutBar from '../KubeCheckoutBar';
 import NodePoolPanel from './NodePoolPanel';
+import IPAccessControlListPanel from './IPAccessControlListPanel';
 import LandingHeader from 'src/components/LandingHeader';
+import { ExtendedIP } from 'src/utilities/ipUtils';
+import { parse as parseIP } from 'ipaddr.js';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -138,6 +141,9 @@ export const CreateCluster = () => {
   const [highAvailability, setHighAvailability] = React.useState<boolean>(
     false
   );
+  const [ipAccessControlList, setIPAccessControlList] = React.useState<boolean>(
+    false
+  );
   const [version, setVersion] = React.useState<Item<string> | undefined>();
   const [errors, setErrors] = React.useState<APIError[] | undefined>();
   const [submitting, setSubmitting] = React.useState<boolean>(false);
@@ -174,8 +180,37 @@ export const CreateCluster = () => {
       pick(['type', 'count'])
     ) as CreateNodePoolData[];
 
+    // correctly formats allow_list to match API endpoint
+    const formatAllowList = (ips: ExtendedIP[]): string => {
+      const mappedIps = new Map<string, string[]>();
+      // we append masks to individual addresses
+      // and leverage Map() to group by ip version
+      ips.map((extendedIP) => {
+        const ipAddress = extendedIP.address;
+        const [base, mask] = ipAddress.split('/');
+        const parsed = parseIP(base);
+        const type = parsed.kind();
+        const newMask = !mask ? (type === 'ipv4' ? '/32' : '/128') : '/' + mask;
+        if (mappedIps.has(type)) {
+          mappedIps.set(type, [...mappedIps.get(type)!, base + newMask]);
+        } else {
+          mappedIps.set(type, [base + newMask]);
+        }
+        return undefined;
+      });
+      // ES6 collections objects don't serialize to JSON, so convert allow_list (Map<string, string[]) to ts_allow_list (string)
+      const allowListObj = {};
+      mappedIps.forEach((v, k) => {
+        allowListObj[k] = v;
+      });
+      return JSON.stringify({ addresses: allowListObj });
+    };
+
     const payload: CreateKubeClusterPayload = {
-      control_plane: { high_availability: highAvailability },
+      control_plane: {
+        high_availability: highAvailability,
+        allow_list: formatAllowList(ips),
+      },
       region: selectedRegion,
       node_pools,
       label,
@@ -231,6 +266,12 @@ export const CreateCluster = () => {
   );
 
   const selectedID = selectedRegion || null;
+
+  // Custom IPs are tracked separately from the form. The <MultipleIPs />
+  // component consumes this state. We use this on form submission if the
+  // `addresses` form value is "ip/netmask", which indicates the user has
+  // intended to specify custom IPs.
+  const [ips, setIPs] = React.useState<ExtendedIP[]>([{ address: '' }]);
 
   if (typesError || regionsError || versionLoadError) {
     /**
@@ -317,6 +358,11 @@ export const CreateCluster = () => {
               isOnCreate
             />
           </Grid>
+          {ipAccessControlList ? (
+            <Grid item>
+              <IPAccessControlListPanel ips={ips} setIPs={setIPs} />
+            </Grid>
+          ) : null}
         </Paper>
       </Grid>
       <Grid
@@ -332,12 +378,15 @@ export const CreateCluster = () => {
           removePool={removePool}
           highAvailability={highAvailability}
           setHighAvailability={setHighAvailability}
+          ipAccessControlList={ipAccessControlList}
+          setIPAccessControlList={setIPAccessControlList}
           region={selectedRegion}
           hasAgreed={hasAgreed}
           toggleHasAgreed={toggleHasAgreed}
           updateFor={[
             hasAgreed,
             highAvailability,
+            ipAccessControlList,
             selectedRegion,
             nodePools,
             submitting,

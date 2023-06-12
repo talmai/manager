@@ -11,6 +11,8 @@ const props: Props = {
   submitting: false,
   highAvailability: false,
   setHighAvailability: jest.fn(),
+  ipAccessControlList: false,
+  setIPAccessControlList: jest.fn(),
   updatePool: jest.fn(),
   removePool: jest.fn(),
   createCluster: jest.fn(),

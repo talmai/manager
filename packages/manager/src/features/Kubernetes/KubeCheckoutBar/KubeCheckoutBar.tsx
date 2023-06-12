@@ -8,6 +8,7 @@ import renderGuard from 'src/components/RenderGuard';
 import EUAgreementCheckbox from 'src/features/Account/Agreements/EUAgreementCheckbox';
 import {
   getKubeHighAvailability,
+  getKubeIPAccessControlList,
   getMonthlyPrice,
 } from 'src/features/Kubernetes/kubeUtils';
 import { useAccount } from 'src/queries/account';
@@ -17,6 +18,7 @@ import { useSpecificTypes } from 'src/queries/types';
 import { isEURegion } from 'src/utilities/formatRegion';
 import { getTotalClusterPrice, nodeWarning } from '../kubeUtils';
 import HACheckbox from './HACheckbox';
+import IPACLCheckbox from './IPACLCheckbox';
 import NodePoolSummary from './NodePoolSummary';
 import { extendTypesQueryResult } from 'src/utilities/extendType';
 
@@ -28,6 +30,8 @@ export interface Props {
   removePool: (poolIdx: number) => void;
   highAvailability: boolean;
   setHighAvailability: (ha: boolean) => void;
+  ipAccessControlList: boolean;
+  setIPAccessControlList: (ipacl: boolean) => void;
   region: string | undefined;
   hasAgreed: boolean;
   toggleHasAgreed: () => void;
@@ -42,6 +46,8 @@ export const KubeCheckoutBar: React.FC<Props> = (props) => {
     updatePool,
     highAvailability,
     setHighAvailability,
+    ipAccessControlList,
+    setIPAccessControlList,
     region,
     hasAgreed,
     toggleHasAgreed,
@@ -67,6 +73,7 @@ export const KubeCheckoutBar: React.FC<Props> = (props) => {
     needsAPool || (!hasAgreed && showGDPRCheckbox)
   );
   const { showHighAvailability } = getKubeHighAvailability(account);
+  const { showIPAccessControlList } = getKubeIPAccessControlList(account);
 
   if (isLoading) {
     return <CircleProgress />;
@@ -79,7 +86,8 @@ export const KubeCheckoutBar: React.FC<Props> = (props) => {
       calculatedPrice={getTotalClusterPrice(
         pools,
         types ?? [],
-        highAvailability
+        highAvailability,
+        ipAccessControlList
       )}
       isMakingRequest={submitting}
       disabled={disableCheckout}
@@ -112,6 +120,16 @@ export const KubeCheckoutBar: React.FC<Props> = (props) => {
             <HACheckbox
               checked={highAvailability}
               onChange={(e) => setHighAvailability(e.target.checked)}
+            />
+            <Divider dark spacingTop={16} spacingBottom={0} />
+          </>
+        ) : null}
+        {showIPAccessControlList ? (
+          <>
+            <Divider spacingTop={6} spacingBottom={12} />
+            <IPACLCheckbox
+              checked={ipAccessControlList}
+              onChange={(e) => setIPAccessControlList(e.target.checked)}
             />
             <Divider dark spacingTop={16} spacingBottom={0} />
           </>
